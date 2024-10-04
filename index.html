@@ -44,6 +44,17 @@
       transform: translate(-50%, -50%);
       font-size: 48px;
     }
+
+    #ideaMessage {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ff6473;
+      padding: 10px;
+      border-radius: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +65,7 @@
   <!-- Input Area (appears after clicking Start) -->
   <div id="inputArea">
     <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
+    <div id="ideaMessage">Ask your partner about the idea!</div> <!-- Idea prompt -->
   </div>
 
   <script>
@@ -64,10 +76,28 @@
       let minLevel = 0;
       const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
 
+      // AudioContext for humming sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.type = 'sine'; // Humming sound
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.start();
+
       // Haptic Feedback (Mobile Vibration API)
       const triggerHapticFeedback = () => {
         if (navigator.vibrate) {
           navigator.vibrate(50); // Basic haptic feedback (50ms)
+        } else {
+          console.log("Haptic feedback not supported on this device.");
+        }
+      };
+
+      // Special Haptic for Idea
+      const triggerSpecialHaptic = () => {
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]); // Special pattern
         }
       };
 
@@ -75,6 +105,7 @@
       const startExperience = () => {
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('inputArea').style.display = 'block';
+        audioContext.resume(); // Start audio context on user interaction
       };
 
       // Update Pleasure Level and UI
@@ -83,6 +114,10 @@
           pleasureLevel = newLevel;
           document.getElementById('pleasureLevel').innerText = newLevel;
           triggerHapticFeedback();
+
+          // Adjust the pitch of the humming sound based on pleasure level
+          const newFrequency = 100 + (newLevel * 100); // Adjust frequency (range: 100-1100 Hz)
+          oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
         }
       };
 
@@ -98,14 +133,10 @@
       const handleDoubleClick = () => {
         jingle.play();
         triggerSpecialHaptic(); // Special haptic for idea jingle
-        alert("Ask your partner what their idea is!"); // Replace this with better prompt later
-      };
-
-      // Special Haptic for Idea
-      const triggerSpecialHaptic = () => {
-        if (navigator.vibrate) {
-          navigator.vibrate([200, 100, 200]); // Special pattern
-        }
+        document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
+        setTimeout(() => {
+          document.getElementById('ideaMessage').style.display = 'none';
+        }, 5000); // Hide the prompt after 5 seconds
       };
 
       // Event Listeners Setup
