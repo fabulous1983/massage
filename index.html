@@ -36,15 +36,17 @@
       position: absolute;
       top: 0;
       left: 0;
-      background-color: #2d2d30; /* Darker background for input area */
+      background: linear-gradient(to bottom, blue, yellow, red); /* Soothing sunset gradient */
     }
 
     #pleasureLevel {
       position: absolute;
-      top: 50%;
+      top: 10px;
       left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
+      transform: translateX(-50%);
+      font-size: 36px;
+      font-weight: bold;
+      color: white;
     }
 
     #ideaMessage {
@@ -60,10 +62,9 @@
 
     #touchArea {
       position: absolute;
-      top: 25%; /* Sensitive area starts at 25% from top */
-      height: 50%; /* Sensitive area height = 50% */
+      top: 0;
+      height: 100%;
       width: 100%;
-      background: linear-gradient(to top, grey, lightblue); /* Color scale from grey to blue */
     }
   </style>
 </head>
@@ -75,7 +76,7 @@
   <!-- Input Area (appears after clicking Start) -->
   <div id="inputArea">
     <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
-    <div id="ideaMessage">I have an idea...</div> <!-- Idea prompt -->
+    <div id="ideaMessage">That's the spot!</div> <!-- Idea prompt -->
     <div id="touchArea"></div> <!-- Touchpad for input -->
   </div>
 
@@ -85,10 +86,8 @@
       let pleasureLevel = 5; // Starting level
       let maxLevel = 10;
       let minLevel = 0;
-      let isHumming = true; // State of the humming sound
       let lastUpdate = 0; // To throttle sound updates
       const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
-      const deepPressJingle = new Audio('jingle2.mp3'); // Jingle for deep press
 
       // AudioContext for humming sound
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -103,34 +102,19 @@
       const triggerHapticFeedback = () => {
         if (navigator.vibrate) {
           navigator.vibrate(50); // Basic haptic feedback (50ms)
-        }
-      };
-
-      // Special Haptic for Idea
-      const triggerSpecialHaptic = () => {
-        if (navigator.vibrate) {
-          navigator.vibrate([200, 100, 200]); // Special pattern
+          console.log("Haptic feedback triggered."); // Debugging: check console for this message
+        } else {
+          console.log("Haptic feedback not supported.");
         }
       };
 
       // Pause and Resume Humming Sound
       const pauseHumming = () => {
         gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Silence the sound
-        isHumming = false;
       };
 
       const resumeHumming = () => {
         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Resume sound with low volume
-        isHumming = true;
-      };
-
-      // Toggle humming sound on single click
-      const toggleHumming = () => {
-        if (isHumming) {
-          pauseHumming();
-        } else {
-          resumeHumming();
-        }
       };
 
       // Show Input Area
@@ -157,36 +141,23 @@
         }
       };
 
-      // Handle Sliding Input (maps to 0-10 even with restricted area)
+      // Handle Sliding Input
       const handleInput = (e) => {
         const screenHeight = window.innerHeight;
         const touchY = e.touches[0].clientY;
 
-        // Map touchY position to 0-10 range even if only 50% of the screen is sensitive
-        const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
+        // Calculate new level based on touch position, 0 at 25% from bottom, 10 at 25% from top
+        const newLevel = Math.round(((screenHeight * 0.75 - touchY) / (screenHeight * 0.5)) * maxLevel);
         updatePleasureLevel(newLevel);
       };
 
-      // Handle Single Click (pause/resume sound)
-      const handleSingleClick = () => {
-        toggleHumming();
-      };
-
-      // Handle Double-click and Deep Press
-      let pressTimer;
-      const handleTouchStart = () => {
-        pressTimer = setTimeout(() => {
-          deepPressJingle.play();
-          document.getElementById('ideaMessage').innerText = "That's the spot!";
-          document.getElementById('ideaMessage').style.display = 'block';
-          setTimeout(() => {
-            document.getElementById('ideaMessage').style.display = 'none';
-          }, 5000); // Hide the message after 5 seconds
-        }, 500); // Press must be held for 500ms for deep press
-      };
-
-      const handleTouchEnd = () => {
-        clearTimeout(pressTimer); // If the press is shorter than 500ms, cancel deep press
+      // Handle Double-click to Show "That's the Spot" and Play Jingle
+      const handleDoubleClick = () => {
+        jingle.play();
+        document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
+        setTimeout(() => {
+          document.getElementById('ideaMessage').style.display = 'none';
+        }, 5000); // Hide the prompt after 5 seconds
       };
 
       // Prevent page pull-to-refresh behavior on iPhone
@@ -201,12 +172,8 @@
         // Track finger movements for sliding input
         touchArea.addEventListener('touchmove', handleInput);
 
-        // Handle single click to pause/resume sound
-        document.addEventListener('click', handleSingleClick);
-
-        // Handle deep press
-        touchArea.addEventListener('touchstart', handleTouchStart);
-        touchArea.addEventListener('touchend', handleTouchEnd);
+        // Handle double-click for jingle and "That's the spot"
+        document.addEventListener('dblclick', handleDoubleClick);
       };
 
       return {
