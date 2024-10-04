@@ -181,7 +181,7 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      startHummingSound(); // Start the sound when the user interacts
+      startHummingSound(); // Ensure the sound starts on the first interaction
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
@@ -243,6 +243,11 @@
     const initListeners = () => {
       const touchArea = document.getElementById('touchArea');
 
+      // Ensure humming starts on the first interaction
+      touchArea.addEventListener('touchstart', () => {
+        startHummingSound(); // Start humming immediately on the first touch interaction
+      });
+
       // Handle both single and double clicks
       touchArea.addEventListener('click', (e) => {
         if (clickTimeout !== null) {
@@ -267,7 +272,6 @@
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
-      startHummingSound(); // Start humming immediately after start screen
       initListeners(); // Initialize event listeners after transition
     };
 
@@ -281,6 +285,5 @@
     pleasureApp.startExperience();
   });
 </script>
-
 </body>
 </html>
