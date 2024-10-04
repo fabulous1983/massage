@@ -60,8 +60,8 @@
 
     #touchArea {
       position: absolute;
-      top: 0;
-      height: 100%;
+      top: 15%; /* Start touch area 15% from top */
+      height: 70%; /* 70% of the screen height for sliding */
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -132,11 +132,14 @@
         audioContext.resume(); // Start audio context after user interaction
       };
 
-      // Update Pleasure Level
+      // Update Pleasure Level and Adjust Sound Frequency
       const updatePleasureLevel = (newLevel) => {
         pleasureLevel = newLevel;
         document.getElementById('pleasureLevel').innerText = newLevel;
         triggerHapticFeedback();
+        // Adjust the pitch of the humming sound based on the pleasure level
+        const newFrequency = 300 + (newLevel * 20); // Subtle pitch changes (range: 300-500 Hz)
+        oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
       };
 
       // Haptic Feedback Debugging (Works on iPhone)
@@ -157,6 +160,24 @@
         }
       };
 
+      // Handle Sliding Input (finger movement up/down)
+      const handleTouchMove = (e) => {
+        const screenHeight = window.innerHeight;
+        const touchY = e.touches[0].clientY;
+
+        // Calculate new level based on touch position
+        const newLevel = Math.round(((screenHeight * 0.75 - touchY) / (screenHeight * 0.5)) * 10);
+
+        // Ensure levels are within range
+        if (newLevel <= 10 && newLevel >= 0) {
+          updatePleasureLevel(newLevel);
+        } else if (newLevel > 10) {
+          updatePleasureLevel(10);
+        } else {
+          updatePleasureLevel(0);
+        }
+      };
+
       // Handle Double-click to Show "That's the Spot" and Play Jingle
       const handleDoubleClick = () => {
         jingle.play();
@@ -172,6 +193,9 @@
 
         // Handle click on each level section
         touchArea.addEventListener('click', handleLevelClick);
+
+        // Handle sliding up/down
+        touchArea.addEventListener('touchmove', handleTouchMove);
 
         // Handle single-click to toggle sound
         touchArea.addEventListener('click', toggleHumming);
