@@ -148,11 +148,12 @@
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound after the start screen is dismissed
+    // Function to start the humming sound after user interaction
     const startHummingSound = () => {
       if (!isHumming) {
+        // Ensure audioContext resumes when the user interacts
         audioContext.resume().then(() => {
-          if (!oscillator) { // Ensure we only create one oscillator
+          if (!oscillator) {
             oscillator = audioContext.createOscillator();
             oscillator.type = 'sine'; // Use a basic sine wave for maximum compatibility
             oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
@@ -164,6 +165,8 @@
             oscillator.start(); // Start the oscillator
             isHumming = true; // Mark that humming has started
           }
+        }).catch(error => {
+          console.error("Error resuming AudioContext: ", error);
         });
       }
     };
@@ -181,7 +184,7 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      startHummingSound(); // Ensure the sound starts on the first interaction
+      startHummingSound(); // Ensure the sound starts on first interaction
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
@@ -243,11 +246,6 @@
     const initListeners = () => {
       const touchArea = document.getElementById('touchArea');
 
-      // Ensure humming starts on the first interaction
-      touchArea.addEventListener('touchstart', () => {
-        startHummingSound(); // Start humming immediately on the first touch interaction
-      });
-
       // Handle both single and double clicks
       touchArea.addEventListener('click', (e) => {
         if (clickTimeout !== null) {
@@ -258,6 +256,7 @@
         } else {
           // Single-click detected, but wait to see if it becomes a double-click
           clickTimeout = setTimeout(() => {
+            startHummingSound(); // Start humming on first single click
             toggleHumming(); // Handle single click (toggle humming sound)
             clickTimeout = null; // Reset after single click action
           }, 300); // 300ms delay to check for double-click
