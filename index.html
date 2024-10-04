@@ -139,28 +139,28 @@
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
-    let isHumming = false; // Sound doesn't start until user touches the screen
+    let isHumming = false; // Sound starts immediately after lever screen is shown
+    const volumeLevel = 0.2; // Constant volume level for humming sound
 
     // Web Audio API for relaxing sound
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let oscillator = null; // We will create the oscillator inside the start function
+    let oscillator = null; // Initialize later when humming starts
     const gainNode = audioContext.createGain();
     const filter = audioContext.createBiquadFilter(); // Low-pass filter
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound when user first interacts
+    // Function to start the humming sound immediately after the start screen
     const startHummingSound = () => {
       if (!isHumming) {
-        // Start/resume audio context on user interaction
         audioContext.resume().then(() => {
-          // Create the oscillator only when user interacts for the first time
+          // Create and configure oscillator
           oscillator = audioContext.createOscillator();
-          oscillator.type = 'triangle'; // Use triangle wave for smoother sound
-          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Set base frequency
+          oscillator.type = 'triangle';
+          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
 
-          // Setup the low-pass filter for a relaxing sound
+          // Setup the low-pass filter
           filter.type = 'lowpass';
           filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
 
@@ -169,21 +169,28 @@
           filter.connect(gainNode);
           gainNode.connect(audioContext.destination);
 
-          // Set the gain (volume) and start the oscillator
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Start with a low volume
-          oscillator.start(); // Start the oscillator after interaction
+          // Set volume and start the oscillator
+          gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Fixed volume
+          oscillator.start(); // Start the oscillator immediately
 
-          // Mark that humming has started to prevent it from restarting
-          isHumming = true;
+          isHumming = true; // Mark that humming has started
         });
+      }
+    };
+
+    // Function to toggle humming on/off with single tap
+    const toggleHumming = () => {
+      if (isHumming) {
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute the sound
+        isHumming = false; // Mark humming as off
+      } else {
+        gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Unmute the sound
+        isHumming = true; // Mark humming as on
       }
     };
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      // Start the humming sound when the user interacts
-      startHummingSound();
-
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
       triggerHapticFeedback(); // Provide feedback to the user
@@ -196,16 +203,6 @@
         oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
         filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime);
       }
-    };
-
-    // Toggle Humming Sound on Single Click
-    const toggleHumming = () => {
-      if (isHumming) {
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute the sound
-      } else {
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute the sound
-      }
-      isHumming = !isHumming;
     };
 
     // Haptic Feedback for interaction (iPhone/Android)
@@ -276,10 +273,11 @@
       touchArea.addEventListener('touchmove', handleTouchMove);
     };
 
-    // Start the Experience - Show Input Area and Initialize Listeners
+    // Start the Experience - Show Input Area, Start Humming, and Initialize Listeners
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
+      startHummingSound(); // Start humming immediately after start screen
       initListeners(); // Initialize event listeners after transition
     };
 
