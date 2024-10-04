@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pleasure Feedback with Relax Colors</title>
+  <title>Pleasure Meter</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -27,6 +27,16 @@
       cursor: pointer;
     }
 
+    #title {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 36px;
+      font-weight: bold;
+      color: white;
+    }
+
     #inputArea {
       display: none;
       width: 100vw;
@@ -39,7 +49,7 @@
 
     #pleasureLevel {
       position: absolute;
-      top: 10px;
+      top: 60px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 36px;
@@ -60,8 +70,8 @@
 
     #touchArea {
       position: absolute;
-      top: 15%; /* Start touch area 15% from top */
-      height: 70%; /* 70% of the screen height for sliding */
+      top: 10%; /* Start touch area 10% from top */
+      height: 75%; /* 75% of the screen height for sliding */
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -77,11 +87,15 @@
 </head>
 <body>
 
-  <!-- Start Button -->
-  <button id="startButton">Start</button>
+  <!-- Start Screen -->
+  <div id="startScreen">
+    <div id="title">Pleasure Meter</div>
+    <button id="startButton">Start</button>
+  </div>
 
   <!-- Input Area -->
   <div id="inputArea">
+    <div id="title">Pleasure Meter</div> <!-- Title on the lever screen -->
     <div id="pleasureLevel">5</div> <!-- Default level -->
     <div id="ideaMessage">That's the spot!</div> <!-- Idea prompt -->
     <div id="touchArea">
@@ -115,20 +129,11 @@
       gainNode.connect(audioContext.destination);
       oscillator.start();
 
-      // Toggle Humming Sound
-      const toggleHumming = () => {
-        if (isHumming) {
-          gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute
-        } else {
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute
-        }
-        isHumming = !isHumming;
-      };
-
       // Start the Experience
       const startExperience = () => {
-        document.getElementById('startButton').style.display = 'none';
+        document.getElementById('startScreen').style.display = 'none';
         document.getElementById('inputArea').style.display = 'block';
+        updatePleasureLevel(5); // Start at level 5 with sound humming
         audioContext.resume(); // Start audio context after user interaction
       };
 
@@ -140,6 +145,16 @@
         // Adjust the pitch of the humming sound based on the pleasure level
         const newFrequency = 300 + (newLevel * 20); // Subtle pitch changes (range: 300-500 Hz)
         oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
+      };
+
+      // Toggle Humming Sound
+      const toggleHumming = () => {
+        if (isHumming) {
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute
+        } else {
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute
+        }
+        isHumming = !isHumming;
       };
 
       // Haptic Feedback Debugging (Works on iPhone)
