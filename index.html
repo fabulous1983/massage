@@ -65,7 +65,7 @@
   <!-- Input Area (appears after clicking Start) -->
   <div id="inputArea">
     <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
-    <div id="ideaMessage">Ask your partner about the idea!</div> <!-- Idea prompt -->
+    <div id="ideaMessage">I have an idea...</div> <!-- Idea prompt -->
   </div>
 
   <script>
@@ -89,8 +89,6 @@
       const triggerHapticFeedback = () => {
         if (navigator.vibrate) {
           navigator.vibrate(50); // Basic haptic feedback (50ms)
-        } else {
-          console.log("Haptic feedback not supported on this device.");
         }
       };
 
@@ -99,6 +97,15 @@
         if (navigator.vibrate) {
           navigator.vibrate([200, 100, 200]); // Special pattern
         }
+      };
+
+      // Pause and Resume Humming Sound
+      const pauseHumming = () => {
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Silence the sound
+      };
+
+      const resumeHumming = () => {
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Resume sound with low volume
       };
 
       // Show Input Area
@@ -111,13 +118,17 @@
       // Update Pleasure Level and UI
       const updatePleasureLevel = (newLevel) => {
         if (newLevel >= minLevel && newLevel <= maxLevel) {
-          pleasureLevel = newLevel;
-          document.getElementById('pleasureLevel').innerText = newLevel;
-          triggerHapticFeedback();
+          pauseHumming(); // Pause the sound momentarily
+          setTimeout(() => {
+            pleasureLevel = newLevel;
+            document.getElementById('pleasureLevel').innerText = newLevel;
+            triggerHapticFeedback();
 
-          // Adjust the pitch of the humming sound based on pleasure level
-          const newFrequency = 100 + (newLevel * 100); // Adjust frequency (range: 100-1100 Hz)
-          oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
+            // Adjust the pitch of the humming sound based on pleasure level
+            const newFrequency = 300 + (newLevel * 20); // Subtle pitch changes (range: 300-500 Hz)
+            oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
+            resumeHumming(); // Resume the humming sound
+          }, 100); // Small pause before humming resumes
         }
       };
 
