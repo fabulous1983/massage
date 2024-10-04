@@ -139,12 +139,11 @@
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
-    let isHumming = false; // Flag to track if the sound has started
+    let isHumming = false; // Sound starts after first interaction
     const volumeLevel = 0.2; // Constant volume level for humming sound
     let oscillator = null; // Oscillator will be initialized when humming starts
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const gainNode = audioContext.createGain();
-    const filter = audioContext.createBiquadFilter(); // Low-pass filter for smoothing sound
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
@@ -155,14 +154,10 @@
         audioContext.resume().then(() => {
           if (!oscillator) { // Ensure we only create one oscillator
             oscillator = audioContext.createOscillator();
-            oscillator.type = 'triangle';
+            oscillator.type = 'sine'; // Use a basic sine wave for maximum compatibility
             oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
 
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
-
-            oscillator.connect(filter);
-            filter.connect(gainNode);
+            oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
             gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Set volume
@@ -192,13 +187,11 @@
       document.getElementById('pleasureLevel').innerText = newLevel;
       triggerHapticFeedback(); // Provide feedback to the user
 
-      // Adjust the pitch and filter frequency based on the pleasure level
+      // Adjust the pitch based on the pleasure level
       const newFrequency = 200 + (newLevel * 30); // Adjust pitch (200-500 Hz range)
-      const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smoother transitions
 
       if (oscillator) {
         oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime); // Change pitch
-        filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime); // Smooth transitions
       }
     };
 
@@ -288,5 +281,6 @@
     pleasureApp.startExperience();
   });
 </script>
+
 </body>
 </html>
