@@ -136,7 +136,6 @@
     <div class="level-line" data-level="0"></div> <!-- Area below this is still 0 -->
   </div>
 </div>
-
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
@@ -161,12 +160,12 @@
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the sound after first touch or value change
+    // Function to start the humming sound
     const startHummingSound = () => {
       if (!isHumming) {
         audioContext.resume().then(() => {
           gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound immediately
-          oscillator.start(); // Start oscillator when user first touches or changes the value
+          oscillator.start(); // Ensure the oscillator starts
           isHumming = true; // Set flag to true to prevent restarting
         });
       }
@@ -174,7 +173,7 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      startHummingSound(); // Start the sound only when the value changes for the first time
+      startHummingSound(); // Start the sound as soon as the value changes for the first time
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
@@ -240,7 +239,7 @@
       document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
       setTimeout(() => {
         document.getElementById('ideaMessage').style.display = 'none';
-      }, 5000); // Hide after 5 seconds
+      }, 1000); // Popup duration shortened to 1 second
     };
 
     let clickTimeout = null; // For handling single vs. double click timing
@@ -286,7 +285,6 @@
     pleasureApp.startExperience();
   });
 </script>
-
 
 </body>
 </html>
