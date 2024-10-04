@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pleasure Feedback with Idea Jingle</title>
+  <style>
+    /* Sensual and modern colors */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #1b1b1e; /* Dark sensual background */
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #ffffff;
+    }
+
+    #startButton {
+      background-color: #ff6473; /* Sensual red/pink button */
+      color: white;
+      padding: 20px 40px;
+      font-size: 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #inputArea {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: #2d2d30; /* Darker background for input area */
+    }
+
+    #pleasureLevel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start Button -->
+  <button id="startButton">Start</button>
+
+  <!-- Input Area (appears after clicking Start) -->
+  <div id="inputArea">
+    <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
+  </div>
+
+  <script>
+    // Modular Structure
+    const pleasureApp = (() => {
+      let pleasureLevel = 5; // Starting level
+      let maxLevel = 10;
+      let minLevel = 0;
+      const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
+
+      // Haptic Feedback (Mobile Vibration API)
+      const triggerHapticFeedback = () => {
+        if (navigator.vibrate) {
+          navigator.vibrate(50); // Basic haptic feedback (50ms)
+        }
+      };
+
+      // Show Input Area
+      const startExperience = () => {
+        document.getElementById('startButton').style.display = 'none';
+        document.getElementById('inputArea').style.display = 'block';
+      };
+
+      // Update Pleasure Level and UI
+      const updatePleasureLevel = (newLevel) => {
+        if (newLevel >= minLevel && newLevel <= maxLevel) {
+          pleasureLevel = newLevel;
+          document.getElementById('pleasureLevel').innerText = newLevel;
+          triggerHapticFeedback();
+        }
+      };
+
+      // Handle Sliding Input
+      const handleInput = (e) => {
+        const screenHeight = window.innerHeight;
+        const touchY = e.touches[0].clientY;
+        const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
+        updatePleasureLevel(newLevel);
+      };
+
+      // Handle Double-click for Idea
+      const handleDoubleClick = () => {
+        jingle.play();
+        triggerSpecialHaptic(); // Special haptic for idea jingle
+        alert("Ask your partner what their idea is!"); // Replace this with better prompt later
+      };
+
+      // Special Haptic for Idea
+      const triggerSpecialHaptic = () => {
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]); // Special pattern
+        }
+      };
+
+      // Event Listeners Setup
+      const initListeners = () => {
+        const inputArea = document.getElementById('inputArea');
+
+        // Track finger movements for sliding input
+        inputArea.addEventListener('touchmove', handleInput);
+
+        // Handle double-tap for "idea" trigger
+        inputArea.addEventListener('dblclick', handleDoubleClick);
+      };
+
+      return {
+        startExperience,
+        initListeners
+      };
+    })();
+
+    // Initialize Event Listeners on Start Button Click
+    document.getElementById('startButton').addEventListener('click', () => {
+      pleasureApp.startExperience();
+      pleasureApp.initListeners();
+    });
+
+  </script>
+</body>
+</html>
