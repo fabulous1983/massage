@@ -157,7 +157,6 @@
     oscillator.connect(filter);
     filter.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    oscillator.start();
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
@@ -166,8 +165,13 @@
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('inputArea').style.display = 'block';
-      updatePleasureLevel(5); // Start at level 5 with sound humming
-      audioContext.resume(); // Start audio context after user interaction
+
+      // Resume the audio context and start the sound when start button is clicked
+      audioContext.resume().then(() => {
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound immediately
+        oscillator.start(); // Start oscillator if not already started
+        updatePleasureLevel(5); // Start at level 5 with sound humming
+      });
     };
 
     // Update Pleasure Level and Adjust Sound Frequency
@@ -277,5 +281,6 @@
     pleasureApp.initListeners();
   });
 </script>
+
 </body>
 </html>
