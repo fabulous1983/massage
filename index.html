@@ -15,6 +15,7 @@
       align-items: center;
       height: 100vh;
       color: #ffffff;
+      overflow: hidden; /* Prevent scrolling */
     }
 
     #startButton {
@@ -55,6 +56,13 @@
       border-radius: 10px;
       display: none;
     }
+
+    #touchArea {
+      position: absolute;
+      top: 25%; /* Sensitive area starts at 25% from top */
+      height: 50%; /* Sensitive area height = 50% */
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +74,7 @@
   <div id="inputArea">
     <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
     <div id="ideaMessage">I have an idea...</div> <!-- Idea prompt -->
+    <div id="touchArea"></div> <!-- Touchpad for input -->
   </div>
 
   <script>
@@ -74,7 +83,10 @@
       let pleasureLevel = 5; // Starting level
       let maxLevel = 10;
       let minLevel = 0;
+      let isHumming = true; // State of the humming sound
+      let lastUpdate = 0; // To throttle sound updates
       const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
+      const jingleThreeTimes = new Audio('jingle.mp3');
 
       // AudioContext for humming sound
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -102,10 +114,21 @@
       // Pause and Resume Humming Sound
       const pauseHumming = () => {
         gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Silence the sound
+        isHumming = false;
       };
 
       const resumeHumming = () => {
         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Resume sound with low volume
+        isHumming = true;
+      };
+
+      // Toggle humming sound on single click
+      const toggleHumming = () => {
+        if (isHumming) {
+          pauseHumming();
+        } else {
+          resumeHumming();
+        }
       };
 
       // Show Input Area
@@ -115,11 +138,12 @@
         audioContext.resume(); // Start audio context on user interaction
       };
 
-      // Update Pleasure Level and UI
+      // Update Pleasure Level and UI with throttling
       const updatePleasureLevel = (newLevel) => {
-        if (newLevel >= minLevel && newLevel <= maxLevel) {
-          pauseHumming(); // Pause the sound momentarily
-          setTimeout(() => {
+        const now = Date.now();
+        if (now - lastUpdate > 100) { // Throttle update to every 100ms to avoid "knistern"
+          lastUpdate = now;
+          if (newLevel >= minLevel && newLevel <= maxLevel) {
             pleasureLevel = newLevel;
             document.getElementById('pleasureLevel').innerText = newLevel;
             triggerHapticFeedback();
@@ -127,38 +151,72 @@
             // Adjust the pitch of the humming sound based on pleasure level
             const newFrequency = 300 + (newLevel * 20); // Subtle pitch changes (range: 300-500 Hz)
             oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
-            resumeHumming(); // Resume the humming sound
-          }, 100); // Small pause before humming resumes
+          }
         }
       };
 
-      // Handle Sliding Input
+      // Handle Sliding Input (only in the middle 50% of the page)
       const handleInput = (e) => {
         const screenHeight = window.innerHeight;
         const touchY = e.touches[0].clientY;
-        const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
-        updatePleasureLevel(newLevel);
+
+        // Check if touch is within the sensitive middle 50% of the page
+        if (touchY >= screenHeight * 0.25 && touchY <= screenHeight * 0.75) {
+          const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
+          updatePleasureLevel(newLevel);
+        }
       };
 
-      // Handle Double-click for Idea
-      const handleDoubleClick = () => {
-        jingle.play();
-        triggerSpecialHaptic(); // Special haptic for idea jingle
-        document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
-        setTimeout(() => {
-          document.getElementById('ideaMessage').style.display = 'none';
-        }, 5000); // Hide the prompt after 5 seconds
+      // Handle Single Click (pause/resume sound)
+      const handleSingleClick = () => {
+        toggleHumming();
       };
+
+      // Handle Double-click for Idea and Deep Double-click
+      let lastClickTime = 0;
+      const handleDoubleClick = () => {
+        const now = Date.now();
+        if (now - lastClickTime < 500) { // Deep double-click (within 500ms)
+          jingleThreeTimes.play();
+          jingleThreeTimes.addEventListener('ended', () => {
+            jingleThreeTimes.play();
+          });
+          setTimeout(() => {
+            document.getElementById('ideaMessage').innerText = "That's the spot!";
+            document.getElementById('ideaMessage').style.display = 'block';
+            setTimeout(() => {
+              document.getElementById('ideaMessage').style.display = 'none';
+            }, 5000);
+          }, 100);
+        } else {
+          jingle.play();
+          triggerSpecialHaptic(); // Special haptic for idea jingle
+          document.getElementById('ideaMessage').innerText = "I have an idea...";
+          document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
+          setTimeout(() => {
+            document.getElementById('ideaMessage').style.display = 'none';
+          }, 5000); // Hide the prompt after 5 seconds
+        }
+        lastClickTime = now;
+      };
+
+      // Prevent page pull-to-refresh behavior on iPhone
+      document.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // Disable page scrolling
+      }, { passive: false });
 
       // Event Listeners Setup
       const initListeners = () => {
-        const inputArea = document.getElementById('inputArea');
+        const touchArea = document.getElementById('touchArea');
 
         // Track finger movements for sliding input
-        inputArea.addEventListener('touchmove', handleInput);
+        touchArea.addEventListener('touchmove', handleInput);
 
-        // Handle double-tap for "idea" trigger
-        inputArea.addEventListener('dblclick', handleDoubleClick);
+        // Handle single click to pause/resume sound
+        touchArea.addEventListener('click', handleSingleClick);
+
+        // Handle double-click and deep double-click
+        touchArea.addEventListener('dblclick', handleDoubleClick);
       };
 
       return {
