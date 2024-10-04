@@ -16,6 +16,7 @@
       height: 100vh;
       color: #ffffff;
       overflow: hidden; /* Prevent scrolling */
+      user-select: none; /* Prevent text selection */
     }
 
     #startButton {
@@ -62,6 +63,7 @@
       top: 25%; /* Sensitive area starts at 25% from top */
       height: 50%; /* Sensitive area height = 50% */
       width: 100%;
+      background: linear-gradient(to top, grey, lightblue); /* Color scale from grey to blue */
     }
   </style>
 </head>
@@ -86,7 +88,7 @@
       let isHumming = true; // State of the humming sound
       let lastUpdate = 0; // To throttle sound updates
       const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
-      const jingleThreeTimes = new Audio('jingle.mp3');
+      const deepPressJingle = new Audio('jingle2.mp3'); // Jingle for deep press
 
       // AudioContext for humming sound
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -155,16 +157,14 @@
         }
       };
 
-      // Handle Sliding Input (only in the middle 50% of the page)
+      // Handle Sliding Input (maps to 0-10 even with restricted area)
       const handleInput = (e) => {
         const screenHeight = window.innerHeight;
         const touchY = e.touches[0].clientY;
 
-        // Check if touch is within the sensitive middle 50% of the page
-        if (touchY >= screenHeight * 0.25 && touchY <= screenHeight * 0.75) {
-          const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
-          updatePleasureLevel(newLevel);
-        }
+        // Map touchY position to 0-10 range even if only 50% of the screen is sensitive
+        const newLevel = Math.round(((screenHeight - touchY) / screenHeight) * maxLevel);
+        updatePleasureLevel(newLevel);
       };
 
       // Handle Single Click (pause/resume sound)
@@ -172,32 +172,21 @@
         toggleHumming();
       };
 
-      // Handle Double-click for Idea and Deep Double-click
-      let lastClickTime = 0;
-      const handleDoubleClick = () => {
-        const now = Date.now();
-        if (now - lastClickTime < 500) { // Deep double-click (within 500ms)
-          jingleThreeTimes.play();
-          jingleThreeTimes.addEventListener('ended', () => {
-            jingleThreeTimes.play();
-          });
-          setTimeout(() => {
-            document.getElementById('ideaMessage').innerText = "That's the spot!";
-            document.getElementById('ideaMessage').style.display = 'block';
-            setTimeout(() => {
-              document.getElementById('ideaMessage').style.display = 'none';
-            }, 5000);
-          }, 100);
-        } else {
-          jingle.play();
-          triggerSpecialHaptic(); // Special haptic for idea jingle
-          document.getElementById('ideaMessage').innerText = "I have an idea...";
-          document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
+      // Handle Double-click and Deep Press
+      let pressTimer;
+      const handleTouchStart = () => {
+        pressTimer = setTimeout(() => {
+          deepPressJingle.play();
+          document.getElementById('ideaMessage').innerText = "That's the spot!";
+          document.getElementById('ideaMessage').style.display = 'block';
           setTimeout(() => {
             document.getElementById('ideaMessage').style.display = 'none';
-          }, 5000); // Hide the prompt after 5 seconds
-        }
-        lastClickTime = now;
+          }, 5000); // Hide the message after 5 seconds
+        }, 500); // Press must be held for 500ms for deep press
+      };
+
+      const handleTouchEnd = () => {
+        clearTimeout(pressTimer); // If the press is shorter than 500ms, cancel deep press
       };
 
       // Prevent page pull-to-refresh behavior on iPhone
@@ -213,10 +202,11 @@
         touchArea.addEventListener('touchmove', handleInput);
 
         // Handle single click to pause/resume sound
-        touchArea.addEventListener('click', handleSingleClick);
+        document.addEventListener('click', handleSingleClick);
 
-        // Handle double-click and deep double-click
-        touchArea.addEventListener('dblclick', handleDoubleClick);
+        // Handle deep press
+        touchArea.addEventListener('touchstart', handleTouchStart);
+        touchArea.addEventListener('touchend', handleTouchEnd);
       };
 
       return {
