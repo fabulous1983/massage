@@ -140,7 +140,7 @@
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
-    let isHumming = true;
+    let isHumming = false; // Sound doesn't start until user touches the screen
 
     // Web Audio API for relaxing sound
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -161,21 +161,21 @@
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Start the Experience
-    const startExperience = () => {
-      document.getElementById('startScreen').style.display = 'none';
-      document.getElementById('inputArea').style.display = 'block';
-
-      // Resume the audio context and start the sound when start button is clicked
-      audioContext.resume().then(() => {
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound immediately
-        oscillator.start(); // Start oscillator if not already started
-        updatePleasureLevel(5); // Start at level 5 with sound humming
-      });
+    // Function to start the sound after first touch or value change
+    const startHummingSound = () => {
+      if (!isHumming) {
+        audioContext.resume().then(() => {
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound immediately
+          oscillator.start(); // Start oscillator when user first touches or changes the value
+          isHumming = true; // Set flag to true to prevent restarting
+        });
+      }
     };
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
+      startHummingSound(); // Start the sound only when the value changes for the first time
+
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
       triggerHapticFeedback();
@@ -281,6 +281,7 @@
     pleasureApp.initListeners();
   });
 </script>
+
 
 </body>
 </html>
