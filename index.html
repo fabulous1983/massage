@@ -148,12 +148,11 @@
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound after user interaction
+    // Function to start the humming sound after the start screen is dismissed
     const startHummingSound = () => {
       if (!isHumming) {
-        // Ensure audioContext resumes when the user interacts
         audioContext.resume().then(() => {
-          if (!oscillator) {
+          if (!oscillator) { // Ensure we only create one oscillator
             oscillator = audioContext.createOscillator();
             oscillator.type = 'sine'; // Use a basic sine wave for maximum compatibility
             oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
@@ -165,8 +164,6 @@
             oscillator.start(); // Start the oscillator
             isHumming = true; // Mark that humming has started
           }
-        }).catch(error => {
-          console.error("Error resuming AudioContext: ", error);
         });
       }
     };
@@ -184,7 +181,7 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      startHummingSound(); // Ensure the sound starts on first interaction
+      startHummingSound(); // Start the sound when the user interacts
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
@@ -256,7 +253,6 @@
         } else {
           // Single-click detected, but wait to see if it becomes a double-click
           clickTimeout = setTimeout(() => {
-            startHummingSound(); // Start humming on first single click
             toggleHumming(); // Handle single click (toggle humming sound)
             clickTimeout = null; // Reset after single click action
           }, 300); // 300ms delay to check for double-click
@@ -271,6 +267,7 @@
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
+      startHummingSound(); // Start humming immediately after start screen
       initListeners(); // Initialize event listeners after transition
     };
 
@@ -284,5 +281,6 @@
     pleasureApp.startExperience();
   });
 </script>
+
 </body>
 </html>
