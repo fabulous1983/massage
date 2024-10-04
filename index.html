@@ -143,50 +143,54 @@
 
     // Web Audio API for relaxing sound
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let oscillator; // We will initialize the oscillator inside the start function
+    let oscillator = null; // We will create the oscillator inside the start function
     const gainNode = audioContext.createGain();
     const filter = audioContext.createBiquadFilter(); // Low-pass filter
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the oscillator and humming sound
+    // Function to start the humming sound when user first interacts
     const startHummingSound = () => {
       if (!isHumming) {
+        // Start/resume audio context on user interaction
         audioContext.resume().then(() => {
-          // Create a new oscillator when user interacts for the first time
+          // Create the oscillator only when user interacts for the first time
           oscillator = audioContext.createOscillator();
-          oscillator.type = 'triangle';
-          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
+          oscillator.type = 'triangle'; // Use triangle wave for smoother sound
+          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Set base frequency
 
-          // Setup the low-pass filter
+          // Setup the low-pass filter for a relaxing sound
           filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Soften the sound with low-pass
+          filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
 
+          // Connect oscillator to filter and gainNode to control volume
           oscillator.connect(filter);
           filter.connect(gainNode);
           gainNode.connect(audioContext.destination);
 
-          // Start oscillator and unmute sound
-          oscillator.start(); 
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound
+          // Set the gain (volume) and start the oscillator
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Start with a low volume
+          oscillator.start(); // Start the oscillator after interaction
 
-          isHumming = true; // Set flag to true to prevent restarting
+          // Mark that humming has started to prevent it from restarting
+          isHumming = true;
         });
       }
     };
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      startHummingSound(); // Start the sound as soon as the value changes for the first time
+      // Start the humming sound when the user interacts
+      startHummingSound();
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
-      triggerHapticFeedback();
+      triggerHapticFeedback(); // Provide feedback to the user
 
-      // Adjust the pitch and filter frequency of the relaxing sound
-      const newFrequency = 200 + (newLevel * 30); // Adjust pitch
-      const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smoother sound
+      // Adjust the pitch and filter frequency based on the pleasure level
+      const newFrequency = 200 + (newLevel * 30); // Adjust the pitch (200-500 Hz range)
+      const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smooth transitions
 
       if (oscillator) {
         oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
@@ -194,23 +198,20 @@
       }
     };
 
-    // Toggle Humming Sound
+    // Toggle Humming Sound on Single Click
     const toggleHumming = () => {
       if (isHumming) {
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute the sound
       } else {
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute the sound
       }
       isHumming = !isHumming;
     };
 
-    // Haptic Feedback Debugging (Works on iPhone)
+    // Haptic Feedback for interaction (iPhone/Android)
     const triggerHapticFeedback = () => {
       if (navigator.vibrate) {
-        navigator.vibrate(50); // Vibration for 50ms
-        console.log('Haptic feedback triggered');
-      } else {
-        console.log('Haptic feedback not supported on this device.');
+        navigator.vibrate(50); // 50ms vibration for feedback
       }
     };
 
@@ -227,10 +228,10 @@
       const screenHeight = window.innerHeight;
       const touchY = e.touches[0].clientY;
 
-      // Calculate new level based on touch position
+      // Calculate new level based on touch position (scale from 0 to 10)
       const newLevel = Math.round(((screenHeight * 0.75 - touchY) / (screenHeight * 0.5)) * 10);
 
-      // Ensure levels are within range, handle above and below
+      // Ensure the value is within the valid range (0 to 10)
       if (newLevel <= 10 && newLevel >= 0) {
         updatePleasureLevel(newLevel);
       } else if (newLevel > 10) {
@@ -243,13 +244,13 @@
     // Handle Double-click to Show "That's the Spot" and Play Jingle
     const handleDoubleClick = () => {
       jingle.play(); // Play the jingle sound
-      document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
+      document.getElementById('ideaMessage').style.display = 'block'; // Show "That's the spot!" message
       setTimeout(() => {
-        document.getElementById('ideaMessage').style.display = 'none';
-      }, 1000); // Popup duration shortened to 1 second
+        document.getElementById('ideaMessage').style.display = 'none'; // Hide the message after 1 second
+      }, 1000); // Popup duration is 1 second
     };
 
-    let clickTimeout = null; // For handling single vs. double click timing
+    let clickTimeout = null; // To differentiate between single and double clicks
 
     // Event Listeners Setup
     const initListeners = () => {
@@ -258,20 +259,20 @@
       // Handle both single and double clicks
       touchArea.addEventListener('click', (e) => {
         if (clickTimeout !== null) {
-          // Double click detected
+          // Double-click detected
           clearTimeout(clickTimeout); // Prevent single click action
           handleDoubleClick();
           clickTimeout = null; // Reset
         } else {
-          // Single click detected, but delay in case it's a double click
+          // Single-click detected, but wait to see if it becomes a double-click
           clickTimeout = setTimeout(() => {
-            toggleHumming(); // Single click action
+            toggleHumming(); // Handle single click (toggle humming sound)
             clickTimeout = null; // Reset after single click action
-          }, 300); // Delay before treating as a single click (300ms)
+          }, 300); // 300ms delay to check for double-click
         }
       });
 
-      // Handle sliding up/down
+      // Handle sliding touch up/down
       touchArea.addEventListener('touchmove', handleTouchMove);
     };
 
@@ -279,7 +280,7 @@
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
-      initListeners(); // Initialize listeners after transition
+      initListeners(); // Initialize event listeners after transition
     };
 
     return {
@@ -292,7 +293,6 @@
     pleasureApp.startExperience();
   });
 </script>
-
 
 </body>
 </html>
