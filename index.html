@@ -3,24 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pleasure Feedback with Idea Jingle</title>
+  <title>Pleasure Feedback with Relax Colors</title>
   <style>
-    /* Sensual and modern colors */
     body {
       font-family: 'Arial', sans-serif;
-      background-color: #1b1b1e; /* Dark sensual background */
       margin: 0;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      color: #ffffff;
-      overflow: hidden; /* Prevent scrolling */
+      color: white;
+      overflow: hidden;
       user-select: none; /* Prevent text selection */
     }
 
     #startButton {
-      background-color: #ff6473; /* Sensual red/pink button */
+      background-color: #FF6473;
       color: white;
       padding: 20px 40px;
       font-size: 24px;
@@ -36,7 +34,7 @@
       position: absolute;
       top: 0;
       left: 0;
-      background: linear-gradient(to bottom, blue, yellow, red); /* Soothing sunset gradient */
+      background: linear-gradient(to bottom, #CBE1EF, #9ACDE0, #5EA9BE, #F3BFB3, #FFDDD3, #FDF8E2); /* Based on your color scheme */
     }
 
     #pleasureLevel {
@@ -46,7 +44,7 @@
       transform: translateX(-50%);
       font-size: 36px;
       font-weight: bold;
-      color: white;
+      color: #333; /* Modern, clean look */
     }
 
     #ideaMessage {
@@ -54,7 +52,7 @@
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #ff6473;
+      background-color: #FF6473;
       padding: 10px;
       border-radius: 10px;
       display: none;
@@ -65,6 +63,15 @@
       top: 0;
       height: 100%;
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Lines to divide each level section */
+    .level-line {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5); /* Semi-transparent lines */
+      flex-grow: 1;
     }
   </style>
 </head>
@@ -73,82 +80,81 @@
   <!-- Start Button -->
   <button id="startButton">Start</button>
 
-  <!-- Input Area (appears after clicking Start) -->
+  <!-- Input Area -->
   <div id="inputArea">
-    <div id="pleasureLevel">5</div> <!-- Default pleasure level -->
+    <div id="pleasureLevel">5</div> <!-- Default level -->
     <div id="ideaMessage">That's the spot!</div> <!-- Idea prompt -->
-    <div id="touchArea"></div> <!-- Touchpad for input -->
+    <div id="touchArea">
+      <!-- 11 level areas (each represents a grade from 0 to 10) -->
+      <div class="level-line" data-level="10"></div>
+      <div class="level-line" data-level="9"></div>
+      <div class="level-line" data-level="8"></div>
+      <div class="level-line" data-level="7"></div>
+      <div class="level-line" data-level="6"></div>
+      <div class="level-line" data-level="5"></div>
+      <div class="level-line" data-level="4"></div>
+      <div class="level-line" data-level="3"></div>
+      <div class="level-line" data-level="2"></div>
+      <div class="level-line" data-level="1"></div>
+      <div class="level-line" data-level="0"></div>
+    </div>
   </div>
 
   <script>
-    // Modular Structure
     const pleasureApp = (() => {
       let pleasureLevel = 5; // Starting level
-      let maxLevel = 10;
-      let minLevel = 0;
-      let lastUpdate = 0; // To throttle sound updates
-      const jingle = new Audio('jingle.mp3'); // Placeholder for jingle audio
+      let isHumming = true;
+      const jingle = new Audio('jingle.mp3'); // Jingle sound
 
       // AudioContext for humming sound
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      oscillator.type = 'sine'; // Humming sound
+      oscillator.type = 'sine';
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       oscillator.start();
 
-      // Haptic Feedback (Mobile Vibration API)
-      const triggerHapticFeedback = () => {
-        if (navigator.vibrate) {
-          navigator.vibrate(50); // Basic haptic feedback (50ms)
-          console.log("Haptic feedback triggered."); // Debugging: check console for this message
+      // Toggle Humming Sound
+      const toggleHumming = () => {
+        if (isHumming) {
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute
         } else {
-          console.log("Haptic feedback not supported.");
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute
         }
+        isHumming = !isHumming;
       };
 
-      // Pause and Resume Humming Sound
-      const pauseHumming = () => {
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Silence the sound
-      };
-
-      const resumeHumming = () => {
-        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Resume sound with low volume
-      };
-
-      // Show Input Area
+      // Start the Experience
       const startExperience = () => {
         document.getElementById('startButton').style.display = 'none';
         document.getElementById('inputArea').style.display = 'block';
-        audioContext.resume(); // Start audio context on user interaction
+        audioContext.resume(); // Start audio context after user interaction
       };
 
-      // Update Pleasure Level and UI with throttling
+      // Update Pleasure Level
       const updatePleasureLevel = (newLevel) => {
-        const now = Date.now();
-        if (now - lastUpdate > 100) { // Throttle update to every 100ms to avoid "knistern"
-          lastUpdate = now;
-          if (newLevel >= minLevel && newLevel <= maxLevel) {
-            pleasureLevel = newLevel;
-            document.getElementById('pleasureLevel').innerText = newLevel;
-            triggerHapticFeedback();
+        pleasureLevel = newLevel;
+        document.getElementById('pleasureLevel').innerText = newLevel;
+        triggerHapticFeedback();
+      };
 
-            // Adjust the pitch of the humming sound based on pleasure level
-            const newFrequency = 300 + (newLevel * 20); // Subtle pitch changes (range: 300-500 Hz)
-            oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
-          }
+      // Haptic Feedback Debugging (Works on iPhone)
+      const triggerHapticFeedback = () => {
+        if (navigator.vibrate) {
+          navigator.vibrate(50); // Vibration for 50ms
+          console.log('Haptic feedback triggered');
+        } else {
+          console.log('Haptic feedback not supported on this device.');
         }
       };
 
-      // Handle Sliding Input
-      const handleInput = (e) => {
-        const screenHeight = window.innerHeight;
-        const touchY = e.touches[0].clientY;
-
-        // Calculate new level based on touch position, 0 at 25% from bottom, 10 at 25% from top
-        const newLevel = Math.round(((screenHeight * 0.75 - touchY) / (screenHeight * 0.5)) * maxLevel);
-        updatePleasureLevel(newLevel);
+      // Handle Clicks on Level Lines
+      const handleLevelClick = (e) => {
+        const level = e.target.getAttribute('data-level');
+        if (level !== null) {
+          updatePleasureLevel(Number(level));
+        }
       };
 
       // Handle Double-click to Show "That's the Spot" and Play Jingle
@@ -157,23 +163,21 @@
         document.getElementById('ideaMessage').style.display = 'block'; // Show idea prompt
         setTimeout(() => {
           document.getElementById('ideaMessage').style.display = 'none';
-        }, 5000); // Hide the prompt after 5 seconds
+        }, 5000); // Hide after 5 seconds
       };
-
-      // Prevent page pull-to-refresh behavior on iPhone
-      document.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // Disable page scrolling
-      }, { passive: false });
 
       // Event Listeners Setup
       const initListeners = () => {
         const touchArea = document.getElementById('touchArea');
 
-        // Track finger movements for sliding input
-        touchArea.addEventListener('touchmove', handleInput);
+        // Handle click on each level section
+        touchArea.addEventListener('click', handleLevelClick);
 
-        // Handle double-click for jingle and "That's the spot"
-        document.addEventListener('dblclick', handleDoubleClick);
+        // Handle single-click to toggle sound
+        touchArea.addEventListener('click', toggleHumming);
+
+        // Handle double-click for "That's the Spot"
+        touchArea.addEventListener('dblclick', handleDoubleClick);
       };
 
       return {
@@ -187,7 +191,6 @@
       pleasureApp.startExperience();
       pleasureApp.initListeners();
     });
-
   </script>
 </body>
 </html>
