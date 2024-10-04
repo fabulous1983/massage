@@ -139,7 +139,7 @@
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
-    let isHumming = false; // Sound starts immediately after lever screen is shown
+    let isHumming = false; // Sound starts after first interaction
     const volumeLevel = 0.2; // Constant volume level for humming sound
 
     // Web Audio API for relaxing sound
@@ -151,27 +151,26 @@
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound immediately after the start screen
+    // Function to start the humming sound on the first touch interaction
     const startHummingSound = () => {
       if (!isHumming) {
+        // Ensure audioContext is resumed on the first interaction
         audioContext.resume().then(() => {
-          // Create and configure oscillator
+          console.log("Starting oscillator"); // Debugging log
           oscillator = audioContext.createOscillator();
           oscillator.type = 'triangle';
           oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
 
-          // Setup the low-pass filter
           filter.type = 'lowpass';
           filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
 
-          // Connect oscillator to filter and gainNode to control volume
           oscillator.connect(filter);
           filter.connect(gainNode);
           gainNode.connect(audioContext.destination);
 
-          // Set volume and start the oscillator
           gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Fixed volume
           oscillator.start(); // Start the oscillator immediately
+          console.log("Oscillator started"); // Debugging log
 
           isHumming = true; // Mark that humming has started
         });
@@ -191,6 +190,9 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
+      // Start humming on first interaction with the lever page
+      startHummingSound(); // Ensure that this only runs once when user interacts
+
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
       triggerHapticFeedback(); // Provide feedback to the user
@@ -273,11 +275,10 @@
       touchArea.addEventListener('touchmove', handleTouchMove);
     };
 
-    // Start the Experience - Show Input Area, Start Humming, and Initialize Listeners
+    // Start the Experience - Show Input Area and Initialize Listeners
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
-      startHummingSound(); // Start humming immediately after start screen
       initListeners(); // Initialize event listeners after transition
     };
 
