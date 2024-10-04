@@ -143,29 +143,34 @@
 
     // Web Audio API for relaxing sound
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
+    let oscillator; // We will initialize the oscillator inside the start function
     const gainNode = audioContext.createGain();
     const filter = audioContext.createBiquadFilter(); // Low-pass filter
-
-    // Create a more relaxing sound by using a triangle wave and a low-pass filter
-    oscillator.type = 'triangle';
-    oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Soften the sound with low-pass
-
-    oscillator.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioContext.destination);
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound
+    // Function to start the oscillator and humming sound
     const startHummingSound = () => {
       if (!isHumming) {
         audioContext.resume().then(() => {
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound immediately
-          oscillator.start(); // Ensure the oscillator starts
+          // Create a new oscillator when user interacts for the first time
+          oscillator = audioContext.createOscillator();
+          oscillator.type = 'triangle';
+          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
+
+          // Setup the low-pass filter
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Soften the sound with low-pass
+
+          oscillator.connect(filter);
+          filter.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          // Start oscillator and unmute sound
+          oscillator.start(); 
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime); // Unmute sound
+
           isHumming = true; // Set flag to true to prevent restarting
         });
       }
@@ -183,8 +188,10 @@
       const newFrequency = 200 + (newLevel * 30); // Adjust pitch
       const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smoother sound
 
-      oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
-      filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime);
+      if (oscillator) {
+        oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
+        filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime);
+      }
     };
 
     // Toggle Humming Sound
@@ -285,6 +292,7 @@
     pleasureApp.startExperience();
   });
 </script>
+
 
 </body>
 </html>
