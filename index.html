@@ -269,16 +269,21 @@
       touchArea.addEventListener('touchmove', handleTouchMove);
     };
 
+    // Start the Experience - Show Input Area and Initialize Listeners
+    const startExperience = () => {
+      document.getElementById('startScreen').style.display = 'none'; // Hide start screen
+      document.getElementById('inputArea').style.display = 'block'; // Show input area
+      initListeners(); // Initialize listeners after transition
+    };
+
     return {
-      startExperience,
-      initListeners
+      startExperience
     };
   })();
 
   // Initialize Event Listeners on Start Button Click
   document.getElementById('startButton').addEventListener('click', () => {
     pleasureApp.startExperience();
-    pleasureApp.initListeners();
   });
 </script>
 
