@@ -139,45 +139,41 @@
 <script>
   const pleasureApp = (() => {
     let pleasureLevel = 5; // Starting level
-    let isHumming = false; // Sound starts after first interaction
+    let isHumming = false; // Flag to track if the sound has started
     const volumeLevel = 0.2; // Constant volume level for humming sound
-
-    // Web Audio API for relaxing sound
+    let oscillator = null; // Oscillator will be initialized when humming starts
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let oscillator = null; // Initialize later when humming starts
     const gainNode = audioContext.createGain();
-    const filter = audioContext.createBiquadFilter(); // Low-pass filter
+    const filter = audioContext.createBiquadFilter(); // Low-pass filter for smoothing sound
 
     // Define the jingle sound
     const jingle = new Audio('jingle.mp3'); // Define the jingle audio file
 
-    // Function to start the humming sound on the first touch interaction
+    // Function to start the humming sound after the start screen is dismissed
     const startHummingSound = () => {
       if (!isHumming) {
-        // Ensure audioContext is resumed on the first interaction
         audioContext.resume().then(() => {
-          console.log("Starting oscillator"); // Debugging log
-          oscillator = audioContext.createOscillator();
-          oscillator.type = 'triangle';
-          oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
+          if (!oscillator) { // Ensure we only create one oscillator
+            oscillator = audioContext.createOscillator();
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // Base frequency
 
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1500, audioContext.currentTime); // Smoothen the sound
 
-          oscillator.connect(filter);
-          filter.connect(gainNode);
-          gainNode.connect(audioContext.destination);
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
 
-          gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Fixed volume
-          oscillator.start(); // Start the oscillator immediately
-          console.log("Oscillator started"); // Debugging log
-
-          isHumming = true; // Mark that humming has started
+            gainNode.gain.setValueAtTime(volumeLevel, audioContext.currentTime); // Set volume
+            oscillator.start(); // Start the oscillator
+            isHumming = true; // Mark that humming has started
+          }
         });
       }
     };
 
-    // Function to toggle humming on/off with single tap
+    // Function to toggle humming on/off with a single tap
     const toggleHumming = () => {
       if (isHumming) {
         gainNode.gain.setValueAtTime(0, audioContext.currentTime); // Mute the sound
@@ -190,20 +186,19 @@
 
     // Update Pleasure Level and Adjust Sound Frequency
     const updatePleasureLevel = (newLevel) => {
-      // Start humming on first interaction with the lever page
-      startHummingSound(); // Ensure that this only runs once when user interacts
+      startHummingSound(); // Start the sound when the user interacts
 
       pleasureLevel = newLevel;
       document.getElementById('pleasureLevel').innerText = newLevel;
       triggerHapticFeedback(); // Provide feedback to the user
 
       // Adjust the pitch and filter frequency based on the pleasure level
-      const newFrequency = 200 + (newLevel * 30); // Adjust the pitch (200-500 Hz range)
-      const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smooth transitions
+      const newFrequency = 200 + (newLevel * 30); // Adjust pitch (200-500 Hz range)
+      const newFilterFrequency = 1000 + (newLevel * 100); // Adjust filter for smoother transitions
 
       if (oscillator) {
-        oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime);
-        filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(newFrequency, audioContext.currentTime); // Change pitch
+        filter.frequency.setValueAtTime(newFilterFrequency, audioContext.currentTime); // Smooth transitions
       }
     };
 
@@ -279,6 +274,7 @@
     const startExperience = () => {
       document.getElementById('startScreen').style.display = 'none'; // Hide start screen
       document.getElementById('inputArea').style.display = 'block'; // Show input area
+      startHummingSound(); // Start humming immediately after start screen
       initListeners(); // Initialize event listeners after transition
     };
 
@@ -292,6 +288,5 @@
     pleasureApp.startExperience();
   });
 </script>
-
 </body>
 </html>
